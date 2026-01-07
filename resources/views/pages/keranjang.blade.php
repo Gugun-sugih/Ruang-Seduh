@@ -12,6 +12,19 @@
         <div class="lg:col-span-2">
             <div class="border-t border-gray-300 pt-8 space-y-10">
 
+                {{-- ✅ FIX: HITUNG TOTAL DI SINI BIAR TIDAK UNDEFINED --}}
+                @php
+                    $subtotal = 0;
+
+                    foreach($cart as $item){
+                        $subtotal += $item['price'] * $item['qty'];
+                    }
+
+                    $tax = $subtotal * 0.10;
+                    $service = $subtotal * 0.05;
+                    $total = $subtotal + $tax + $service;
+                @endphp
+
                 @if(count($cart) === 0)
                     <p class="text-gray-500 font-body">Keranjang masih kosong. Kembali ke halaman pesan dan klik tombol +.</p>
                 @else
@@ -85,7 +98,7 @@
                                             </form>
                                         </div>
 
-                                        <form method="POST" action="{{ route('cart.remove') }}">
+                                        <form method="POST" action="{{ route('cart.clear') }}">
                                             @csrf
                                             <input type="hidden" name="name" value="{{ $c['name'] }}">
                                             <button title="Hapus" class="w-12 h-12 flex items-center justify-center rounded-xl border border-gray-200">
@@ -111,7 +124,7 @@
             <div class="border border-gray-300 rounded-2xl p-6">
                 <h3 class="text-xl font-heading font-bold text-brand text-center">Ringkasan Pembayaran</h3>
 
-                <form class="mt-6 space-y-3 font-body text-sm" method="POST" action="{{ route('checkout.submit') }}">
+                <form class="mt-6 space-y-3 font-body text-sm" method="POST" action="{{ route('checkout.pay') }}">
                     @csrf
 
                     <div class="grid grid-cols-3 gap-2 items-center">

@@ -3,99 +3,100 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
+use App\Models\Order;
+use App\Models\OrderItem;
 
 class CartController extends Controller
 {
-    // ✅ ADD ITEM
+    // ✅ tampilkan halaman keranjang (checkoutPage)
+    public function checkoutPage()
+    {
+        $cart = Session::get('cart', []);
+        return view('pages.keranjang', compact('cart'));
+    }
+
+    // ✅ add menu ke cart
     public function add(Request $request)
     {
-        $cart = session()->get('cart', []);
+        $cart = Session::get('cart', []);
 
         $name = $request->name;
 
         if (isset($cart[$name])) {
-            $cart[$name]['qty']++;
+            $cart[$name]['qty'] += 1;
         } else {
             $cart[$name] = [
                 "name" => $request->name,
-                "price" => (int)$request->price,
+                "price" => $request->price,
                 "image" => $request->image,
                 "qty" => 1,
-                "note" => ""
             ];
         }
 
-        session()->put('cart', $cart);
+        Session::put('cart', $cart);
 
-        return back();
+        return back()->with('success', 'Menu ditambahkan ke keranjang!');
     }
 
-    // ✅ INCREASE
+    // ✅ tambah qty
     public function increase(Request $request)
     {
-        $cart = session()->get('cart', []);
-        $name = $request->name;
+        $cart = Session::get('cart', []);
 
-        if (isset($cart[$name])) {
-            $cart[$name]['qty']++;
+        if (isset($cart[$request->name])) {
+            $cart[$request->name]['qty'] += 1;
         }
 
-        session()->put('cart', $cart);
+        Session::put('cart', $cart);
         return back();
     }
 
-    // ✅ DECREASE
+    // ✅ kurang qty
     public function decrease(Request $request)
     {
-        $cart = session()->get('cart', []);
-        $name = $request->name;
+        $cart = Session::get('cart', []);
 
-        if (isset($cart[$name])) {
-            $cart[$name]['qty']--;
+        if (isset($cart[$request->name])) {
+            $cart[$request->name]['qty'] -= 1;
 
-            if ($cart[$name]['qty'] <= 0) {
-                unset($cart[$name]);
+            if ($cart[$request->name]['qty'] <= 0) {
+                unset($cart[$request->name]);
             }
         }
 
-        session()->put('cart', $cart);
+        Session::put('cart', $cart);
         return back();
     }
 
-    // ✅ REMOVE ITEM
-    public function remove(Request $request)
-    {
-        $cart = session()->get('cart', []);
-        unset($cart[$request->name]);
-
-        session()->put('cart', $cart);
-        return back();
-    }
-
-    // ✅ CLEAR ALL
+    // ✅ hapus semua cart
     public function clear()
     {
-        session()->forget('cart');
-        return back();
+        Session::forget('cart');
+        return back()->with('success', 'Keranjang dikosongkan!');
     }
 
-    // ✅ CHECKOUT PAGE
-    public function checkout()
+    // ✅ submit checkout → tampilkan pembayaran
+    public function checkout(Request $request)
     {
-        $cart = session()->get('cart', []);
-        return view('pages.checkout', compact('cart'));
-    }
-
-    // ✅ PAY -> SIMULASI OUTPUT STRUK
-    public function pay(Request $request)
-    {
-        $cart = session()->get('cart', []);
+        $cart = Session::get('cart', []);
 
         if (count($cart) == 0) {
-            return redirect()->route('checkout')->with('error', 'Keranjang kosong!');
+            return redirect()->route('pesan')->with('error', 'Keranjang kosong!');
         }
 
-        // hitung subtotal
+        return view('pages.pembayaran', compact('cart'));
+    }
+
+    // ✅ proses bayar → simpan ke database + redirect struk
+    public function pay(Request $request)
+    {
+        $cart = Session::get('cart', []);
+
+        if (count($cart) == 0) {
+            return redirect()->route('pesan')->with('error', 'Keranjang kosong!');
+        }
+
         $subtotal = 0;
         foreach ($cart as $item) {
             $subtotal += $item['price'] * $item['qty'];
@@ -105,35 +106,57 @@ class CartController extends Controller
         $service = $subtotal * 0.05;
         $total = $subtotal + $tax + $service;
 
-        // data pembayaran (bisa dipakai struk)
-        $orderData = [
+        // ✅ simpan order
+        $order = Order::create([
             "customer_name" => $request->customer_name,
-            "table_number"  => $request->table_number,
-            "payment_method"=> $request->payment_method,
-            "subtotal"      => $subtotal,
-            "tax"           => $tax,
-            "service"       => $service,
-            "total"         => $total,
-            "cart"          => $cart
-        ];
+            "table_number" => $request->table_number,
+            "order_date" => now(),
+            "payment_method" => $request->payment_method,
+            "subtotal" => $subtotal,
+            "tax" => $tax,
+            "service" => $service,
+            "total" => $total,
+            "status" => "pending"
+        ]);
 
-        session()->put('order', $orderData);
-
-        // kosongkan cart setelah bayar
-        session()->forget('cart');
-
-        return redirect()->route('checkout.struk');
-    }
-
-    // ✅ STRUK
-    public function struk()
-    {
-        $order = session()->get('order');
-
-        if (!$order) {
-            return redirect('/pesan');
+        // ✅ simpan order item
+        foreach ($cart as $item) {
+            OrderItem::create([
+                "order_id" => $order->id,
+                "name" => $item['name'],
+                "price" => $item['price'],
+                "qty" => $item['qty'],
+                "total" => $item['price'] * $item['qty'],
+                "note" => null
+            ]);
         }
 
+        Session::forget('cart');
+
+        return redirect()->route('checkout.struk', $order->id);
+    }
+
+    // ✅ struk
+    public function struk($id)
+    {
+        $order = Order::with('items')->findOrFail($id);
         return view('pages.struk', compact('order'));
     }
+
+    public function updateNote(Request $request)
+{
+    $cart = session()->get('cart', []);
+
+    $name = $request->name;
+    $note = $request->note;
+
+    if(isset($cart[$name])){
+        $cart[$name]['note'] = $note;
+    }
+
+    session()->put('cart', $cart);
+
+    return redirect()->back();
+}
+
 }

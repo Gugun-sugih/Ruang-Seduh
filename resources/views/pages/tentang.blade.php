@@ -117,21 +117,21 @@
 
         <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-10 justify-items-center">
             <x-team-card
-    name="Nur Hikma Niswaryanti"
+    name="Nur Hikma Missgyarti"
     role="UI/UX Designer"
     image="{{ asset('images/hikma.png') }}"
-/>
-
-<x-team-card
-    name="Syahrina Alma Fitrina"
-    role="Front End"
-    image="{{ asset('images/ama.png') }}"
 />
 
 <x-team-card
     name="Deden Raga Nuhudiyah"
     role="Back End"
     image="{{ asset('images/oga.png') }}"
+/>
+
+<x-team-card
+    name="Syahrina Alma Fitrina"
+    role="Front End"
+    image="{{ asset('images/ama.png') }}"
 />
 
         </div>
