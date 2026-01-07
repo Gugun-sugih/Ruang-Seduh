@@ -75,4 +75,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/orders/{id}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
     Route::put('/admin/orders/{id}/status', [AdminOrderController::class, 'updateStatus'])->name('admin.orders.status');
 
+    Route::post('/kontak', function () {
+    return back()->with('success', 'Pesan berhasil dikirim!');
+})->name('kontak.submit');
+
 });
