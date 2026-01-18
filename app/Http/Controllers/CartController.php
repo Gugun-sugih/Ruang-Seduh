@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Menu;
 
 class CartController extends Controller
 {
@@ -16,21 +17,28 @@ class CartController extends Controller
         return view('pages.keranjang', compact('cart'));
     }
 
-    // ✅ add menu ke cart
+    // ✅ add menu ke cart (PAKAI menu_id dari DB)
     public function add(Request $request)
     {
+        $request->validate([
+            'menu_id' => 'required|integer|exists:menus,id',
+        ]);
+
+        $menu = Menu::findOrFail($request->menu_id);
+
         $cart = Session::get('cart', []);
+        $key = (string) $menu->id;
 
-        $name = $request->name;
-
-        if (isset($cart[$name])) {
-            $cart[$name]['qty'] += 1;
+        if (isset($cart[$key])) {
+            $cart[$key]['qty'] += 1;
         } else {
-            $cart[$name] = [
-                "name" => $request->name,
-                "price" => $request->price,
-                "image" => $request->image,
-                "qty" => 1,
+            $cart[$key] = [
+                "id"    => $menu->id,
+                "name"  => $menu->name,
+                "price" => (int) $menu->price,
+                "image" => $menu->image ? asset('storage/' . $menu->image) : asset('images/no-image.png'),
+                "qty"   => 1,
+                "note"  => null,
             ];
         }
 
@@ -39,34 +47,62 @@ class CartController extends Controller
         return back()->with('success', 'Menu ditambahkan ke keranjang!');
     }
 
-    // ✅ tambah qty
+    // ✅ tambah qty (pakai menu_id)
     public function increase(Request $request)
     {
-        $cart = Session::get('cart', []);
+        $request->validate([
+            'menu_id' => 'required|integer',
+        ]);
 
-        if (isset($cart[$request->name])) {
-            $cart[$request->name]['qty'] += 1;
+        $cart = Session::get('cart', []);
+        $key = (string) $request->menu_id;
+
+        if (isset($cart[$key])) {
+            $cart[$key]['qty'] += 1;
         }
 
         Session::put('cart', $cart);
         return back();
     }
 
-    // ✅ kurang qty
+    // ✅ kurang qty (pakai menu_id)
     public function decrease(Request $request)
     {
+        $request->validate([
+            'menu_id' => 'required|integer',
+        ]);
+
         $cart = Session::get('cart', []);
+        $key = (string) $request->menu_id;
 
-        if (isset($cart[$request->name])) {
-            $cart[$request->name]['qty'] -= 1;
+        if (isset($cart[$key])) {
+            $cart[$key]['qty'] -= 1;
 
-            if ($cart[$request->name]['qty'] <= 0) {
-                unset($cart[$request->name]);
+            if ($cart[$key]['qty'] <= 0) {
+                unset($cart[$key]);
             }
         }
 
         Session::put('cart', $cart);
         return back();
+    }
+
+    // ✅ hapus 1 item dari cart (pakai menu_id)
+    public function remove(Request $request)
+    {
+        $request->validate([
+            'menu_id' => 'required|integer',
+        ]);
+
+        $cart = Session::get('cart', []);
+        $key = (string) $request->menu_id;
+
+        if (isset($cart[$key])) {
+            unset($cart[$key]);
+        }
+
+        Session::put('cart', $cart);
+        return back()->with('success', 'Item dihapus dari keranjang!');
     }
 
     // ✅ hapus semua cart
@@ -82,7 +118,7 @@ class CartController extends Controller
         $cart = Session::get('cart', []);
 
         if (count($cart) == 0) {
-            return redirect()->route('pesan')->with('error', 'Keranjang kosong!');
+            return redirect('/pesan')->with('error', 'Keranjang kosong!');
         }
 
         return view('pages.pembayaran', compact('cart'));
@@ -94,8 +130,14 @@ class CartController extends Controller
         $cart = Session::get('cart', []);
 
         if (count($cart) == 0) {
-            return redirect()->route('pesan')->with('error', 'Keranjang kosong!');
+            return redirect('/pesan')->with('error', 'Keranjang kosong!');
         }
+
+        $request->validate([
+            'customer_name'   => 'required|string|max:100',
+            'table_number'    => 'nullable|string|max:20',
+            'payment_method'  => 'required|string|max:50',
+        ]);
 
         $subtotal = 0;
         foreach ($cart as $item) {
@@ -127,7 +169,7 @@ class CartController extends Controller
                 "price" => $item['price'],
                 "qty" => $item['qty'],
                 "total" => $item['price'] * $item['qty'],
-                "note" => null
+                "note" => $item['note'] ?? null
             ]);
         }
 
@@ -143,20 +185,23 @@ class CartController extends Controller
         return view('pages.struk', compact('order'));
     }
 
+    // ✅ simpan catatan per item (pakai menu_id)
     public function updateNote(Request $request)
-{
-    $cart = session()->get('cart', []);
+    {
+        $request->validate([
+            'menu_id' => 'required|integer',
+            'note' => 'nullable|string|max:255',
+        ]);
 
-    $name = $request->name;
-    $note = $request->note;
+        $cart = Session::get('cart', []);
+        $key = (string) $request->menu_id;
 
-    if(isset($cart[$name])){
-        $cart[$name]['note'] = $note;
+        if (isset($cart[$key])) {
+            $cart[$key]['note'] = $request->note;
+        }
+
+        Session::put('cart', $cart);
+
+        return redirect()->back();
     }
-
-    session()->put('cart', $cart);
-
-    return redirect()->back();
-}
-
 }

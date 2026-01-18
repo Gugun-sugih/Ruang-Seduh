@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('title', 'Kelola Menu - Admin')
 
 @section('content')
@@ -38,22 +38,31 @@
                     <td class="p-4">{{ $menu->category }}</td>
                     <td class="p-4">Rp{{ number_format($menu->price,0,',','.') }}</td>
                     <td class="p-4">
-                        <img src="{{ asset('images/'.$menu->image) }}" class="w-16 h-16 rounded-lg object-cover">
+                        @if($menu->image)
+                            <img src="{{ asset('storage/'.$menu->image) }}"
+                                 class="w-16 h-16 rounded-lg object-cover border">
+                        @else
+                            <div class="w-16 h-16 rounded-lg bg-gray-100 border flex items-center justify-center text-xs text-gray-500">
+                                No Image
+                            </div>
+                        @endif
                     </td>
-                    <td class="p-4 flex justify-center gap-3">
-                        <a href="{{ route('admin.menu.edit', $menu->id) }}"
-                           class="px-4 py-2 rounded-lg bg-yellow-400 text-white font-semibold">
-                           Edit
-                        </a>
+                    <td class="p-4">
+                        <div class="flex justify-center gap-3">
+                            <a href="{{ route('admin.menu.edit', $menu->id) }}"
+                               class="px-4 py-2 rounded-lg bg-yellow-400 text-white font-semibold">
+                               Edit
+                            </a>
 
-                        <form action="{{ route('admin.menu.destroy', $menu->id) }}" method="POST">
-                            @csrf
-                            @method('DELETE')
-                            <button onclick="return confirm('Yakin hapus menu?')"
-                                class="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold">
-                                Hapus
-                            </button>
-                        </form>
+                            <form action="{{ route('admin.menu.destroy', $menu->id) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button onclick="return confirm('Yakin hapus menu?')"
+                                    class="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold">
+                                    Hapus
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @endforeach

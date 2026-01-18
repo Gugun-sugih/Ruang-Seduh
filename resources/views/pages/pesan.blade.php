@@ -44,77 +44,77 @@
     </div>
 
     @php
-$cart = session('cart', []);
-$total = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
-@endphp
+        $cart = session('cart', []);
+        $total = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
+    @endphp
 
-<div class="mt-14 max-w-3xl mx-auto bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-    <div class="flex items-center justify-between">
-        <h3 class="font-heading font-bold text-lg text-brand">Keranjang</h3>
+    <div class="mt-14 max-w-3xl mx-auto bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div class="flex items-center justify-between">
+            <h3 class="font-heading font-bold text-lg text-brand">Keranjang</h3>
 
-        <form method="POST" action="{{ route('cart.clear') }}">
-            @csrf
-            <button class="text-sm text-gray-500 underline">Hapus semua</button>
-        </form>
-    </div>
+            <form method="POST" action="{{ route('cart.clear') }}">
+                @csrf
+                <button class="text-sm text-gray-500 underline">Hapus semua</button>
+            </form>
+        </div>
 
-    @if(count($cart) == 0)
-        <p class="text-sm text-gray-500 mt-4 font-body">Keranjang masih kosong. Klik tombol + untuk memilih menu.</p>
-    @else
-        <div class="mt-6 space-y-4">
-            @foreach($cart as $c)
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <img src="{{ $c['image'] }}" class="w-12 h-12 rounded-lg object-cover">
-                        <div>
-                            <p class="font-semibold text-brand">{{ $c['name'] }}</p>
-                            <p class="text-xs text-gray-500 font-body">
-                                Rp{{ number_format($c['price'],0,',','.') }}
-                            </p>
+        @if(count($cart) == 0)
+            <p class="text-sm text-gray-500 mt-4 font-body">Keranjang masih kosong. Klik tombol + untuk memilih menu.</p>
+        @else
+            <div class="mt-6 space-y-4">
+                @foreach($cart as $c)
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <img src="{{ $c['image'] }}" class="w-12 h-12 rounded-lg object-cover">
+                            <div>
+                                <p class="font-semibold text-brand">{{ $c['name'] }}</p>
+                                <p class="text-xs text-gray-500 font-body">
+                                    Rp{{ number_format($c['price'],0,',','.') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <form method="POST" action="{{ route('cart.decrease') }}">
+                                @csrf
+                                <input type="hidden" name="menu_id" value="{{ $c['id'] }}">
+                                <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center">-</button>
+                            </form>
+
+                            <span class="font-semibold">{{ $c['qty'] }}</span>
+
+                            <form method="POST" action="{{ route('cart.increase') }}">
+                                @csrf
+                                <input type="hidden" name="menu_id" value="{{ $c['id'] }}">
+                                <button class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center">+</button>
+                            </form>
                         </div>
                     </div>
+                @endforeach
+            </div>
 
-                    <div class="flex items-center gap-3">
-                        <form method="POST" action="{{ route('cart.decrease') }}">
-                            @csrf
-                            <input type="hidden" name="name" value="{{ $c['name'] }}">
-                            <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center">-</button>
-                        </form>
+            <div class="mt-6 flex items-center justify-between border-t pt-4">
+                <p class="font-semibold text-brand">Total</p>
+                <p class="font-bold text-brand">Rp{{ number_format($total,0,',','.') }}</p>
+            </div>
 
-                        <span class="font-semibold">{{ $c['qty'] }}</span>
-
-                        <form method="POST" action="{{ route('cart.increase') }}">
-                            @csrf
-                            <input type="hidden" name="name" value="{{ $c['name'] }}">
-                            <button class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center">+</button>
-                        </form>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-
-        <div class="mt-6 flex items-center justify-between border-t pt-4">
-            <p class="font-semibold text-brand">Total</p>
-            <p class="font-bold text-brand">Rp{{ number_format($total,0,',','.') }}</p>
-        </div>
-
-        <div class="mt-6 text-right">
-            <a href="{{ route('checkout') }}"
-               class="inline-block bg-brand text-white px-8 py-3 rounded-full font-semibold shadow-sm">
-               Pesan Sekarang
-            </a>
-        </div>
-    @endif
-</div>
+            <div class="mt-6 text-right">
+                <a href="{{ route('checkout') }}"
+                   class="inline-block bg-brand text-white px-8 py-3 rounded-full font-semibold shadow-sm">
+                   Pesan Sekarang
+                </a>
+            </div>
+        @endif
+    </div>
 
     <!-- Menu List grouped -->
     <div class="mt-16 space-y-14">
-
         @foreach($grouped as $category => $items)
             <div>
                 <h2 class="text-xl font-heading font-bold text-brand mb-8">
-    {{ ucwords(str_replace('-', ' ', $category)) }}
+                    {{ ucwords(str_replace('-', ' ', $category)) }}
                 </h2>
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
                     @foreach($items as $item)
                         <x-order-card :item="$item" />
@@ -122,7 +122,6 @@ $total = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
                 </div>
             </div>
         @endforeach
-
     </div>
 
 </section>
